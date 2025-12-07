@@ -1,0 +1,2106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ToDoList_v6.0</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <style>
+    /* ===== カラーテーマ（バイオレット系） ===== */
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      background: #f6f2fb;
+    }
+    header {
+      padding: 8px 12px;
+      background: #7e57c2; /* バイオレット */
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      font-size: 16px;
+      margin: 0;
+      white-space: nowrap;
+    }
+    header .help {
+      font-size: 11px;
+      color: #ede7f6;
+      flex: 1;
+      min-width: 180px;
+    }
+    header .controls {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    header .controls button,
+    header .controls label.file-button {
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      background: #ffffff;
+      color: #5e35b1;
+      white-space: nowrap;
+    }
+    header .controls button:hover,
+    header .controls label.file-button:hover {
+      background: #f3e5f5;
+    }
+    header .controls button.danger {
+      background: #fbe9e7;
+      color: #d84315;
+    }
+    header .controls button.danger:hover {
+      background: #ffccbc;
+    }
+    header .controls input[type="file"] {
+      display: none;
+    }
+    header .search-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    header .search-group input[type="text"] {
+      padding: 2px 4px;
+      font-size: 12px;
+      border-radius: 4px;
+      border: 1px solid #bbb;
+      min-width: 140px;
+    }
+    #toggleCalendarBtn {
+      display: none;
+    }
+
+    .layout {
+      display: flex;
+      height: calc(100vh - 56px);
+    }
+
+    /* 左：カレンダーエリア（v5.3レイアウト＋色だけバイオレット） */
+    .sidebar {
+      width: 280px;
+      background: #ffffff;
+      border-right: 1px solid #ddd;
+      overflow-y: auto;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    .calendar-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+      font-size: 13px;
+      color: #5e35b1;
+    }
+    .calendar-nav {
+      margin-bottom: 6px;
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .calendar-nav button {
+      flex: 1;
+      padding: 3px 4px;
+      border-radius: 4px;
+      border: 1px solid #b39ddb;
+      background: #f3e5f5;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      color: #5e35b1;
+    }
+    .calendar-nav button:hover {
+      background: #e1bee7;
+    }
+    .calendar-grid-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .calendar {
+      border: 1px solid #d1c4e9;
+      border-radius: 6px;
+      padding: 4px 4px 6px;
+      width: 120px;
+      background: #faf5ff;
+      box-sizing: border-box;
+    }
+    .calendar-header {
+      text-align: center;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 4px;
+      color: #5e35b1;
+    }
+    .calendar-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      font-size: 10px;
+      text-align: center;
+    }
+    .calendar-weekdays div {
+      font-weight: bold;
+      padding: 2px 0;
+      color: #7e57c2;
+    }
+    .calendar-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      font-size: 10px;
+      text-align: center;
+      justify-items: center;
+      align-items: center;
+    }
+    .calendar-day-button {
+      border: none;
+      padding: 0;
+      margin: 1px 0;
+      background: none;
+      cursor: pointer;
+      font-size: 11px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    .calendar-day-button:disabled {
+      visibility: hidden;
+      cursor: default;
+    }
+    .calendar-day-button.selected {
+      background: #7e57c2;
+      color: white;
+    }
+
+    /* 右側：週間＋月間ToDo */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 週間ToDo */
+    .week-header {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+      background: #f3e5f5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .week-header .nav-buttons {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .week-header .nav-buttons button {
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #b39ddb;
+      background: #ffffff;
+      cursor: pointer;
+      font-size: 12px;
+      color: #5e35b1;
+    }
+    .week-header .nav-buttons button:hover {
+      background: #ede7f6;
+    }
+    .week-header .week-label {
+      font-weight: bold;
+      font-size: 13px;
+      text-align: right;
+      flex: 1;
+      min-width: 160px;
+      color: #4a148c;
+    }
+
+    /* モバイル用 日別ナビ（デフォルトは非表示） */
+    .week-header .mobile-day-nav {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      flex: 1;
+      min-width: 0;
+    }
+    .mobile-day-nav button {
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #b39ddb;
+      background: #ffffff;
+      cursor: pointer;
+      font-size: 12px;
+      color: #5e35b1;
+      white-space: nowrap;
+    }
+    .mobile-day-nav button:hover {
+      background: #ede7f6;
+    }
+    #mobileDateLabel {
+      flex: 1;
+      text-align: center;
+      font-weight: bold;
+      font-size: 13px;
+      color: #4a148c;
+    }
+
+    .week-container {
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: hidden;
+      background: #f6f2fb;
+    }
+
+    .week-grid {
+      display: flex;
+      height: 100%;
+      min-width: 800px;
+    }
+
+    .day-column {
+      flex: 1;
+      border-left: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      min-width: 180px;
+      transition: background 0.15s ease;
+    }
+    .day-column:first-child {
+      border-left: none;
+    }
+    .day-column.today-day {
+      background: #f9f5ff;
+      box-shadow: inset 0 0 0 2px #d1c4e9;
+    }
+    .day-header {
+      padding: 6px 4px;
+      border-bottom: 1px solid #eee;
+      background: #f5f5f5;
+      text-align: center;
+      font-size: 12px;
+    }
+    .day-header .weekday {
+      font-weight: bold;
+      color: #555;
+    }
+    .day-header .date {
+      font-size: 12px;
+      color: #555;
+    }
+    .day-header.today-header {
+      background: #5e35b1;
+      color: #ffffff;
+    }
+    .day-header.today-header .weekday,
+    .day-header.today-header .date {
+      color: #ffffff;
+      font-weight: bold;
+    }
+
+    .day-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 4px;
+      overflow-y: auto;
+    }
+
+    .todo-section-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 4px 0 2px;
+    }
+    .todo-section-title {
+      font-size: 11px;
+      color: #6a1b9a;
+      border-bottom: 1px solid #eee;
+      flex: 1;
+    }
+    .todo-section-buttons {
+      display: flex;
+      gap: 2px;
+      margin-left: 4px;
+    }
+    .todo-section-buttons button {
+      border: 1px solid #b39ddb;
+      background: #f3e5f5;
+      border-radius: 4px;
+      padding: 0 4px;
+      font-size: 10px;
+      cursor: pointer;
+      color: #5e35b1;
+    }
+    .todo-section-buttons button:hover {
+      background: #e1bee7;
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+      gap: 4px;
+      flex-wrap: nowrap;
+      padding: 1px 2px;
+      border-radius: 4px;
+    }
+    .todo-item input[type="checkbox"] {
+      margin: 0;
+    }
+    .todo-item input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      padding: 4px 6px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 13px;
+    }
+    .todo-item.completed input[type="text"] {
+      color: #999;
+      text-decoration: line-through;
+      background: #f5f5f5;
+    }
+    .todo-item.unnecessary input[type="text"] {
+      color: #aaa;
+      font-style: italic;
+      background: #fafafa;
+    }
+    .todo-item.high-priority {
+      border-left: 4px solid #f57c00;
+      background: #fff3e0;
+    }
+    .todo-item button.move-btn,
+    .todo-item button.delete-btn {
+      border: 1px solid #b39ddb;
+      background: #f3e5f5;
+      border-radius: 4px;
+      padding: 1px 4px;
+      font-size: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      color: #5e35b1;
+    }
+    .todo-item button.move-btn:hover,
+    .todo-item button.delete-btn:hover {
+      background: #e1bee7;
+    }
+    .todo-item.search-hit {
+      box-shadow: 0 0 0 2px #fff59d inset;
+    }
+
+    /* 月間ToDo */
+    .monthly-container {
+      border-top: 1px solid #ddd;
+      background: #ffffff;
+      padding: 6px 8px;
+      max-height: 260px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+    .monthly-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .monthly-header span {
+      font-size: 13px;
+      font-weight: bold;
+      color: #5e35b1;
+    }
+    .monthly-header .month-buttons {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .monthly-header button {
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #b39ddb;
+      background: #f3e5f5;
+      cursor: pointer;
+      font-size: 11px;
+      white-space: nowrap;
+      color: #5e35b1;
+    }
+    .monthly-header button:hover {
+      background: #e1bee7;
+    }
+    .monthly-list .todo-item input[type="text"] {
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      .sidebar {
+        width: 260px;
+      }
+      .calendar {
+        width: 120px;
+      }
+    }
+
+    /* 詳細モーダル共通 */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(74, 20, 140, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .hidden {
+      display: none;
+    }
+    .modal {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 12px 14px;
+      width: 520px;
+      max-width: 95vw;
+      max-height: 90vh;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      border: 1px solid #d1c4e9;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .modal-header-title {
+      font-weight: bold;
+      font-size: 14px;
+      color: #5e35b1;
+    }
+    .modal-header button {
+      border: none;
+      background: transparent;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 4px;
+      color: #5e35b1;
+    }
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .modal-footer button {
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid #b39ddb;
+      background: #f3e5f5;
+      cursor: pointer;
+      font-size: 12px;
+      color: #5e35b1;
+    }
+    .modal-footer button.primary {
+      background: #7e57c2;
+      color: #fff;
+      border-color: #7e57c2;
+    }
+    .modal-footer button.primary:hover {
+      background: #5e35b1;
+    }
+    .modal-footer button:hover {
+      background: #e1bee7;
+    }
+    .modal-row {
+      margin-bottom: 6px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .modal-row label {
+      width: 90px;
+      font-size: 12px;
+      color: #444;
+    }
+    .modal-row input[type="text"],
+    .modal-row input[type="url"],
+    .modal-row select,
+    .modal-row textarea {
+      flex: 1;
+      font-size: 12px;
+      padding: 3px 4px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    .modal-row textarea {
+      min-height: 50px;
+      resize: vertical;
+    }
+    .modal-row .time-selects {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      flex: 1;
+    }
+    .modal-row .time-selects select {
+      width: 80px;
+      flex: none;
+    }
+    .modal-row .status-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .modal-row .status-group label {
+      width: auto;
+      font-size: 12px;
+    }
+    .modal-row .status-group input[type="radio"] {
+      margin-right: 2px;
+    }
+    .modal-row .prio-high-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+    }
+
+    /* 検索結果モーダル */
+    .search-modal {
+      width: 680px;
+      max-width: 95vw;
+    }
+    .search-results-body {
+      max-height: 70vh;
+      overflow-y: auto;
+      font-size: 12px;
+    }
+    .search-results-body h3 {
+      margin: 4px 0 6px;
+      font-size: 13px;
+      color: #4a148c;
+    }
+    .search-section-title {
+      margin: 8px 0 4px;
+      font-weight: bold;
+      color: #5e35b1;
+      border-bottom: 1px solid #ede7f6;
+      padding-bottom: 2px;
+      font-size: 12px;
+    }
+    .search-date-heading {
+      margin: 4px 0 2px;
+      font-weight: bold;
+      font-size: 12px;
+      color: #444;
+    }
+    .search-result-item {
+      padding: 3px 4px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .search-result-item:hover {
+      background: #f3e5f5;
+    }
+    .search-result-meta {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 1px;
+    }
+    .search-result-text {
+      font-size: 12px;
+    }
+    .search-no-result {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .search-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 1px 4px;
+      border-radius: 8px;
+      background: #e0e0e0;
+      margin-right: 4px;
+    }
+    .search-badge.active {
+      background: #fff59d;
+    }
+    .search-badge.done {
+      background: #c5e1a5;
+    }
+    .search-badge.unnecessary {
+      background: #eeeeee;
+    }
+
+    /* ===== スマホ用レイアウト調整 ===== */
+    @media (max-width: 700px) {
+      .layout {
+        flex-direction: column;
+        height: auto;
+      }
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+        max-height: 260px;
+      }
+      .sidebar.collapsed {
+        display: none;
+      }
+      #toggleCalendarBtn {
+        display: inline-block;
+      }
+      .week-header {
+        flex-wrap: nowrap;
+      }
+      .week-header .nav-buttons,
+      .week-header .week-label {
+        display: none;
+      }
+      .week-header .mobile-day-nav {
+        display: flex;
+      }
+      .week-container {
+        height: auto;
+        max-height: none;
+      }
+      .week-grid {
+        min-width: 0;
+      }
+      .day-column {
+        display: none;
+        min-width: 100%;
+      }
+      .day-column.mobile-current-day {
+        display: flex;
+      }
+      .monthly-container {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>ToDoList v6.0</h1>
+  <div class="help">
+    ※localStorageに保存／テキストをダブルクリックで詳細画面／Enterで次のToDoへ
+  </div>
+  <div class="controls">
+    <div class="search-group">
+      <input type="text" id="searchInput" placeholder="検索（ToDo・詳細など）">
+      <button onclick="searchTodos()">検索</button>
+      <button onclick="clearSearch()">クリア</button>
+    </div>
+    <button id="toggleCalendarBtn" onclick="toggleCalendar()">カレンダー表示/非表示</button>
+    <button class="danger" onclick="clearAllData()" title="すべてのToDoを削除して初期化します">全データ初期化</button>
+    <button onclick="downloadBackup()" title="現在の全データをJSONファイルで保存します">バックアップ保存</button>
+    <label for="backupFile" class="file-button" title="保存しておいたバックアップJSONから復元します">バックアップ読込</label>
+    <input type="file" id="backupFile" accept="application/json" onchange="handleBackupFile(event)">
+  </div>
+</header>
+
+<div class="layout">
+  <!-- カレンダー（PC: 左 / スマホ: 上部に折りたたみ） -->
+  <aside class="sidebar">
+    <div class="calendar-title">カレンダー</div>
+    <div class="calendar-nav">
+      <button onclick="shiftCalendar(-7)">◀ 前の7か月</button>
+      <button onclick="shiftCalendar(7)">次の7か月 ▶</button>
+    </div>
+    <div id="calendarWrapper" class="calendar-grid-wrapper"></div>
+  </aside>
+
+  <!-- 週間＋月間ToDo（スマホでは1日ずつ表示） -->
+  <main class="main">
+    <div class="week-header">
+      <div class="nav-buttons">
+        <button onclick="changeWeek(-1)">&laquo; 前の週</button>
+        <button onclick="goTodayWeek()">今日の週</button>
+        <button onclick="changeWeek(1)">次の週 &raquo;</button>
+      </div>
+      <div class="mobile-day-nav">
+        <button onclick="changeMobileDay(-1)">＜</button>
+        <div id="mobileDateLabel"></div>
+        <button onclick="goTodayMobile()">今日</button>
+        <button onclick="changeMobileDay(1)">＞</button>
+      </div>
+      <div class="week-label" id="weekLabel"></div>
+    </div>
+
+    <div class="week-container">
+      <div id="weekGrid" class="week-grid"></div>
+    </div>
+
+    <div class="monthly-container">
+      <div class="monthly-header">
+        <span id="monthlyLabel"></span>
+        <div class="month-buttons">
+          <button onclick="changeMonthly(-1)">前月</button>
+          <button onclick="goCurrentMonth()">今月</button>
+          <button onclick="changeMonthly(1)">翌月</button>
+        </div>
+      </div>
+      <div class="monthly-list" id="monthlyList"></div>
+    </div>
+  </main>
+</div>
+
+<!-- 詳細モーダル -->
+<div id="detailOverlay" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-header-title" id="detailTitle"></div>
+      <button type="button" onclick="closeDetail(false)" title="閉じる">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-row">
+        <label for="detailTodo">ToDo</label>
+        <input type="text" id="detailTodo">
+      </div>
+      <div class="modal-row">
+        <label>状態</label>
+        <div class="status-group">
+          <label><input type="radio" name="detailStatus" value="normal">通常</label>
+          <label><input type="radio" name="detailStatus" value="done">完了</label>
+          <label><input type="radio" name="detailStatus" value="unnecessary">不要</label>
+        </div>
+      </div>
+      <div class="modal-row">
+        <label>時間</label>
+        <div class="time-selects">
+          <select id="detailHour">
+            <option value="">--</option>
+          </select>
+          <span>時</span>
+          <select id="detailMinute">
+            <option value="">--</option>
+          </select>
+          <span>分</span>
+        </div>
+      </div>
+      <div class="modal-row">
+        <label for="detailPlace">場所</label>
+        <input type="text" id="detailPlace" placeholder="会議室名／訪問先など">
+      </div>
+      <div class="modal-row">
+        <label for="detailDetail">詳細</label>
+        <textarea id="detailDetail" placeholder="やる前の詳細内容や手順など"></textarea>
+      </div>
+      <div class="modal-row">
+        <label for="detailNote">完了時の所感</label>
+        <textarea id="detailNote" placeholder="読んだ本・資料のメモ、気付き、反省など"></textarea>
+      </div>
+      <div class="modal-row">
+        <label>優先度</label>
+        <div class="prio-high-label">
+          <input type="checkbox" id="detailPriorityHigh">
+          <span>高（色付き・上位表示）</span>
+        </div>
+      </div>
+      <div class="modal-row">
+        <label for="detailLink">リンクURL</label>
+        <input type="url" id="detailLink" placeholder="関連ファイル／サイトのURLなど">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" onclick="closeDetail(false)">キャンセル</button>
+      <button type="button" class="primary" onclick="closeDetail(true)">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 検索結果モーダル -->
+<div id="searchResultsOverlay" class="modal-overlay hidden">
+  <div class="modal search-modal">
+    <div class="modal-header">
+      <div class="modal-header-title" id="searchResultsTitle">検索結果</div>
+      <button type="button" onclick="closeSearchResults()" title="閉じる">×</button>
+    </div>
+    <div id="searchResultsBody" class="search-results-body"></div>
+    <div class="modal-footer">
+      <button type="button" onclick="closeSearchResults()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'weekly_todo_state_v6_0';
+
+  let state = {
+    todosByDate: {},
+    monthlyTodos: {},
+    currentWeekStart: null,
+    currentMonthly: null,
+    calendarCenterMonth: null,
+    currentSelectedDate: null  // モバイルの日別表示用
+  };
+
+  let currentDetail = null;
+  let pendingFocus = null;
+
+  function pad2(n) { return n.toString().padStart(2, '0'); }
+  function toDateString(date) {
+    return date.getFullYear() + '-' + pad2(date.getMonth() + 1) + '-' + pad2(date.getDate());
+  }
+  function fromDateString(str) {
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  function getMonday(date) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    let day = d.getDay();
+    const diff = (day === 0 ? -6 : 1 - day);
+    d.setDate(d.getDate() + diff);
+    return d;
+  }
+  function addDays(date, n) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    d.setDate(d.getDate() + n);
+    return d;
+  }
+  function addMonths(date, n) {
+    const d = new Date(date.getFullYear(), date.getMonth(), 1);
+    d.setMonth(d.getMonth() + n);
+    return d;
+  }
+  function formatWeekLabel(monday) {
+    const start = monday;
+    const end = addDays(monday, 6);
+    return (
+      start.getFullYear() + '/' + (start.getMonth() + 1) + '/' + start.getDate() +
+      ' 〜 ' +
+      end.getFullYear() + '/' + (end.getMonth() + 1) + '/' + end.getDate()
+    );
+  }
+  function formatMonthLabel(year, month) {
+    return year + '年' + month + '月の月間ToDo';
+  }
+  function getMonthlyKeyFromDate(date) {
+    return date.getFullYear() + '-' + pad2(date.getMonth() + 1);
+  }
+  function getJpWeekday(date) {
+    return ['日','月','火','水','木','金','土'][date.getDay()];
+  }
+
+  function loadState() {
+    try {
+      const saved =
+        localStorage.getItem(STORAGE_KEY) ||
+        localStorage.getItem('weekly_todo_state_v5_4') ||
+        localStorage.getItem('weekly_todo_state_v5_3') ||
+        localStorage.getItem('weekly_todo_state_v5_1') ||
+        localStorage.getItem('weekly_todo_state_v5_0') ||
+        localStorage.getItem('weekly_todo_state_v4_violet2') ||
+        localStorage.getItem('weekly_todo_state_v4_violet') ||
+        localStorage.getItem('weekly_todo_state_v4') ||
+        localStorage.getItem('weekly_todo_state_v3') ||
+        localStorage.getItem('weekly_todo_state_v2') ||
+        localStorage.getItem('weekly_todo_state_v1');
+      if (saved) {
+        const obj = JSON.parse(saved);
+        if (obj && typeof obj === 'object') {
+          state = Object.assign({
+            todosByDate: {},
+            monthlyTodos: {},
+            currentWeekStart: null,
+            currentMonthly: null,
+            calendarCenterMonth: null,
+            currentSelectedDate: null
+          }, obj);
+        }
+      }
+    } catch (e) {
+      console.warn('loadState error', e);
+    }
+    const today = new Date();
+    const todayStr = toDateString(today);
+    if (!state.currentWeekStart) state.currentWeekStart = toDateString(getMonday(today));
+    if (!state.currentMonthly) state.currentMonthly = getMonthlyKeyFromDate(today);
+    if (!state.calendarCenterMonth) state.calendarCenterMonth = state.currentMonthly;
+    if (!state.currentSelectedDate) state.currentSelectedDate = todayStr;
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.warn('saveState error', e);
+    }
+  }
+
+  function clearAllData() {
+    if (!confirm('全てのToDoを削除して初期化しますか？')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    const today = new Date();
+    const todayStr = toDateString(today);
+    state = {
+      todosByDate: {},
+      monthlyTodos: {},
+      currentWeekStart: toDateString(getMonday(today)),
+      currentMonthly: getMonthlyKeyFromDate(today),
+      calendarCenterMonth: getMonthlyKeyFromDate(today),
+      currentSelectedDate: todayStr
+    };
+    renderAll();
+  }
+
+  function downloadBackup() {
+    try {
+      const dataStr = JSON.stringify(state, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const todayStr = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = 'todo_backup_' + todayStr + '.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert('バックアップ保存に失敗しました。');
+      console.error(e);
+    }
+  }
+
+  function handleBackupFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const obj = JSON.parse(e.target.result);
+        if (!obj || typeof obj !== 'object') throw new Error('invalid');
+        state = Object.assign({
+          todosByDate: {},
+          monthlyTodos: {},
+          currentWeekStart: null,
+          currentMonthly: null,
+          calendarCenterMonth: null,
+          currentSelectedDate: null
+        }, obj);
+        const today = new Date();
+        const todayStr = toDateString(today);
+        if (!state.currentWeekStart) state.currentWeekStart = toDateString(getMonday(today));
+        if (!state.currentMonthly) state.currentMonthly = getMonthlyKeyFromDate(today);
+        if (!state.calendarCenterMonth) state.calendarCenterMonth = state.currentMonthly;
+        if (!state.currentSelectedDate) state.currentSelectedDate = todayStr;
+        saveState();
+        renderAll();
+        alert('バックアップから復元しました。');
+      } catch (err) {
+        alert('バックアップファイルの読み込みに失敗しました。');
+        console.error(err);
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }
+
+  function normalizeItem(item, idx) {
+    if (typeof item.id === 'undefined') item.id = idx;
+    if (typeof item.text === 'undefined') item.text = '';
+    if (typeof item.completed === 'undefined') item.completed = false;
+    if (typeof item.unnecessary === 'undefined') item.unnecessary = false;
+    if (typeof item.timeHour === 'undefined') item.timeHour = null;
+    if (typeof item.timeMinute === 'undefined') item.timeMinute = null;
+    if (typeof item.place === 'undefined') item.place = '';
+    if (typeof item.detail === 'undefined') item.detail = '';
+    if (typeof item.note === 'undefined') item.note = '';
+    if (typeof item.priority === 'undefined') item.priority = '';
+    if (typeof item.link === 'undefined') item.link = '';
+    if (typeof item._match === 'undefined') item._match = false;
+  }
+
+  function normalizeDayList(list) {
+    list.forEach((t, idx) => normalizeItem(t, idx));
+    return list;
+  }
+  function normalizeMonthlyList(list) {
+    list.forEach((t, idx) => normalizeItem(t, idx));
+    return list;
+  }
+
+  function ensureDayTodos(dateStr) {
+    if (!state.todosByDate[dateStr]) {
+      const arr = [];
+      for (let i = 0; i < 5; i++) {
+        arr.push({
+          id: i, text: '', completed: false, unnecessary: false,
+          timeHour: null, timeMinute: null,
+          place: '', detail: '', note: '',
+          priority: '', link: '', _match: false
+        });
+      }
+      state.todosByDate[dateStr] = arr;
+    }
+    return normalizeDayList(state.todosByDate[dateStr]);
+  }
+
+  function ensureMonthlyTodos(monthKey) {
+    if (!state.monthlyTodos[monthKey]) {
+      const arr = [];
+      for (let i = 0; i < 5; i++) {
+        arr.push({
+          id: i, text: '', completed: false, unnecessary: false,
+          timeHour: null, timeMinute: null,
+          place: '', detail: '', note: '', priority: '', link: '', _match: false
+        });
+      }
+      state.monthlyTodos[monthKey] = arr;
+    }
+    return normalizeMonthlyList(state.monthlyTodos[monthKey]);
+  }
+
+  function updateDayTodoText(dateStr, id, value) {
+    const list = ensureDayTodos(dateStr);
+    const item = list.find(t => t.id === id);
+    if (item) {
+      item.text = value;
+      saveState();
+    }
+  }
+
+  function toggleDayTodoCompleted(dateStr, id, completed) {
+    const list = ensureDayTodos(dateStr);
+    const item = list.find(t => t.id === id);
+    if (item) {
+      item.completed = completed;
+      if (completed) item.unnecessary = false;
+      saveState();
+      renderWeek();
+    }
+  }
+
+  function addDayTodo(dateStr, focusNew = false) {
+    const list = ensureDayTodos(dateStr);
+    const newId = list.reduce((max, t) => Math.max(max, t.id), -1) + 1;
+    list.push({
+      id: newId, text: '', completed: false, unnecessary: false,
+      timeHour: null, timeMinute: null,
+      place: '', detail: '', note: '',
+      priority: '', link: '', _match: false
+    });
+    saveState();
+    if (focusNew) {
+      pendingFocus = { type: 'day', key: dateStr, id: newId };
+    }
+    renderWeek();
+  }
+
+  function deleteDayTodo(dateStr, id) {
+    const list = ensureDayTodos(dateStr);
+    if (list.length <= 1) {
+      const item = list[0];
+      item.text = '';
+      item.completed = false;
+      item.unnecessary = false;
+      item.timeHour = null;
+      item.timeMinute = null;
+      item.place = '';
+      item.detail = '';
+      item.note = '';
+      item.priority = '';
+      item.link = '';
+    } else {
+      const idx = list.findIndex(t => t.id === id);
+      if (idx >= 0) list.splice(idx, 1);
+    }
+    saveState();
+    renderWeek();
+  }
+
+  function moveDayTodoToNext(dateStr, id) {
+    const list = ensureDayTodos(dateStr);
+    const item = list.find(t => t.id === id);
+    if (!item || !item.text.trim() || item.completed || item.unnecessary) return;
+
+    const srcDate = fromDateString(dateStr);
+    const dstDate = addDays(srcDate, 1);
+    const dstStr = toDateString(dstDate);
+    const dstList = ensureDayTodos(dstStr);
+
+    const newId = dstList.reduce((max, t) => Math.max(max, t.id), -1) + 1;
+    const newItem = JSON.parse(JSON.stringify(item));
+    newItem.id = newId;
+    dstList.push(newItem);
+
+    deleteDayTodo(dateStr, id);
+    saveState();
+    renderWeek();
+    renderCalendars();
+  }
+
+  function updateMonthlyTodoText(monthKey, id, value) {
+    const list = ensureMonthlyTodos(monthKey);
+    const item = list.find(t => t.id === id);
+    if (item) {
+      item.text = value;
+      saveState();
+    }
+  }
+
+  function toggleMonthlyTodoCompleted(monthKey, id, completed) {
+    const list = ensureMonthlyTodos(monthKey);
+    const item = list.find(t => t.id === id);
+    if (item) {
+      item.completed = completed;
+      if (completed) item.unnecessary = false;
+      saveState();
+      renderMonthly();
+    }
+  }
+
+  function addMonthlyTodo(monthKey, focusNew = false) {
+    const list = ensureMonthlyTodos(monthKey);
+    const newId = list.reduce((max, t) => Math.max(max, t.id), -1) + 1;
+    list.push({
+      id: newId, text: '', completed: false, unnecessary: false,
+      timeHour: null, timeMinute: null,
+      place: '', detail: '', note: '', priority: '', link: '', _match: false
+    });
+    saveState();
+    if (focusNew) {
+      pendingFocus = { type: 'month', key: monthKey, id: newId };
+    }
+    renderMonthly();
+  }
+
+  function deleteMonthlyTodo(monthKey, id) {
+    const list = ensureMonthlyTodos(monthKey);
+    if (list.length <= 1) {
+      const item = list[0];
+      item.text = '';
+      item.completed = false;
+      item.unnecessary = false;
+      item.timeHour = null;
+      item.timeMinute = null;
+      item.place = '';
+      item.detail = '';
+      item.note = '';
+      item.priority = '';
+      item.link = '';
+    } else {
+      const idx = list.findIndex(t => t.id === id);
+      if (idx >= 0) list.splice(idx, 1);
+    }
+    saveState();
+    renderMonthly();
+  }
+
+  function moveMonthlyTodoToNext(monthKey, id) {
+    const list = ensureMonthlyTodos(monthKey);
+    const item = list.find(t => t.id === id);
+    if (!item || !item.text.trim() || item.completed || item.unnecessary) return;
+
+    const [y, m] = monthKey.split('-').map(Number);
+    const srcDate = new Date(y, m - 1, 1);
+    const dstDate = addMonths(srcDate, 1);
+    const dstKey = getMonthlyKeyFromDate(dstDate);
+    const dstList = ensureMonthlyTodos(dstKey);
+
+    const newId = dstList.reduce((max, t) => Math.max(max, t.id), -1) + 1;
+    const newItem = JSON.parse(JSON.stringify(item));
+    newItem.id = newId;
+    dstList.push(newItem);
+
+    deleteMonthlyTodo(monthKey, id);
+    saveState();
+    renderMonthly();
+  }
+
+  function sortActiveItems(list) {
+    const active = list.filter(t => !t.completed && !t.unnecessary);
+    const high = active.filter(t => t.priority === 'high');
+    const normal = active.filter(t => t.priority !== 'high');
+
+    const withTime = normal.filter(t => t.timeHour !== null && t.timeMinute !== null);
+    const withoutTime = normal.filter(t => t.timeHour === null || t.timeMinute === null);
+
+    const timeVal = t => t.timeHour * 60 + t.timeMinute;
+
+    high.sort((a, b) => {
+      const ha = (a.timeHour !== null && a.timeMinute !== null);
+      const hb = (b.timeHour !== null && b.timeMinute !== null);
+      if (ha && hb) return timeVal(a) - timeVal(b);
+      if (ha && !hb) return -1;
+      if (!ha && hb) return 1;
+      return 0;
+    });
+
+    withTime.sort((a, b) => timeVal(a) - timeVal(b));
+    return { activeSorted: [...high, ...withTime, ...withoutTime], highIds: new Set(high.map(t => t.id)) };
+  }
+
+  /* ===== カレンダー描画 ===== */
+  function renderCalendars() {
+    const wrapper = document.getElementById('calendarWrapper');
+    wrapper.innerHTML = '';
+    const [cy, cm] = state.calendarCenterMonth.split('-').map(Number);
+    const centerFirst = new Date(cy, cm - 1, 1);
+    for (let offset = -3; offset <= 3; offset++) {
+      const d = addMonths(centerFirst, offset);
+      wrapper.appendChild(createCalendarElement(d));
+    }
+  }
+
+  function createCalendarElement(firstOfMonth) {
+    const year = firstOfMonth.getFullYear();
+    const month = firstOfMonth.getMonth();
+    const monthKey = year + '-' + pad2(month + 1);
+
+    const calendar = document.createElement('div');
+    calendar.className = 'calendar';
+
+    const header = document.createElement('div');
+    header.className = 'calendar-header';
+    header.textContent = year + '年' + (month + 1) + '月';
+    calendar.appendChild(header);
+
+    const weekdaysRow = document.createElement('div');
+    weekdaysRow.className = 'calendar-weekdays';
+    ['月','火','水','木','金','土','日'].forEach(w => {
+      const cell = document.createElement('div');
+      cell.textContent = w;
+      weekdaysRow.appendChild(cell);
+    });
+    calendar.appendChild(weekdaysRow);
+
+    const daysRow = document.createElement('div');
+    daysRow.className = 'calendar-days';
+
+    const firstDay = new Date(year, month, 1);
+    let firstDow = (firstDay.getDay() + 6) % 7; // 月曜始まり
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const selectedMonday = fromDateString(state.currentWeekStart);
+    const selectedWeekDates = [];
+    for (let i = 0; i < 7; i++) {
+      selectedWeekDates.push(toDateString(addDays(selectedMonday, i)));
+    }
+
+    for (let i = 0; i < firstDow; i++) {
+      const emptyBtn = document.createElement('button');
+      emptyBtn.className = 'calendar-day-button';
+      emptyBtn.disabled = true;
+      daysRow.appendChild(emptyBtn);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const cellDate = new Date(year, month, day);
+      const dateStr = toDateString(cellDate);
+      const btn = document.createElement('button');
+      btn.className = 'calendar-day-button';
+      btn.textContent = day;
+
+      if (selectedWeekDates.includes(dateStr)) {
+        btn.classList.add('selected');
+      }
+
+      btn.addEventListener('click', () => {
+        const monday = getMonday(cellDate);
+        state.currentWeekStart = toDateString(monday);
+        state.currentMonthly = monthKey;
+        state.calendarCenterMonth = monthKey;
+        state.currentSelectedDate = dateStr;
+        saveState();
+        renderWeek();
+        renderCalendars();
+        renderMonthly();
+      });
+
+      daysRow.appendChild(btn);
+    }
+
+    calendar.appendChild(daysRow);
+    return calendar;
+  }
+
+  function shiftCalendar(months) {
+    const [y, m] = state.calendarCenterMonth.split('-').map(Number);
+    const d = new Date(y, m - 1, 1);
+    const shifted = addMonths(d, months);
+    state.calendarCenterMonth = getMonthlyKeyFromDate(shifted);
+    saveState();
+    renderCalendars();
+  }
+
+  function toggleCalendar() {
+    const sidebar = document.querySelector('.sidebar');
+    if (!sidebar) return;
+    sidebar.classList.toggle('collapsed');
+  }
+
+  /* ===== 週間・日別描画 ===== */
+  function renderWeek() {
+    const weekGrid = document.getElementById('weekGrid');
+    const weekLabel = document.getElementById('weekLabel');
+    const monday = fromDateString(state.currentWeekStart);
+    weekLabel.textContent = formatWeekLabel(monday);
+    weekGrid.innerHTML = '';
+    const weekdays = ['月','火','水','木','金','土','日'];
+    const todayStr = toDateString(new Date());
+
+    // 選択中日付が今の週に含まれていなければ、月曜を選択日にする
+    let selectedDate = state.currentSelectedDate;
+    const selectedDateObj = fromDateString(selectedDate);
+    const mondayThis = monday;
+    const sundayThis = addDays(mondayThis, 6);
+    if (selectedDateObj < mondayThis || selectedDateObj > sundayThis) {
+      state.currentSelectedDate = toDateString(mondayThis);
+      selectedDate = state.currentSelectedDate;
+    }
+
+    for (let i = 0; i < 7; i++) {
+      const date = addDays(monday, i);
+      const dateStr = toDateString(date);
+      const col = document.createElement('div');
+      col.className = 'day-column';
+      col.id = 'day-' + dateStr;
+      col.dataset.date = dateStr;
+
+      const header = document.createElement('div');
+      header.className = 'day-header';
+      const weekdaySpan = document.createElement('div');
+      weekdaySpan.className = 'weekday';
+      weekdaySpan.textContent = weekdays[i];
+      const dateSpan = document.createElement('div');
+      dateSpan.className = 'date';
+      dateSpan.textContent = (date.getMonth() + 1) + '/' + date.getDate();
+      header.appendChild(weekdaySpan);
+      header.appendChild(dateSpan);
+      col.appendChild(header);
+
+      if (dateStr === todayStr) {
+        col.classList.add('today-day');
+        header.classList.add('today-header');
+      }
+
+      const body = document.createElement('div');
+      body.className = 'day-body';
+
+      const todos = ensureDayTodos(dateStr);
+      const { activeSorted, highIds } = sortActiveItems(todos);
+      const completed = todos.filter(t => t.completed);
+      const unnecessary = todos.filter(t => t.unnecessary);
+
+      const activeRow = document.createElement('div');
+      activeRow.className = 'todo-section-title-row';
+      const activeTitle = document.createElement('div');
+      activeTitle.className = 'todo-section-title';
+      activeTitle.textContent = 'ToDo';
+      const activeBtns = document.createElement('div');
+      activeBtns.className = 'todo-section-buttons';
+      const plusBtn = document.createElement('button');
+      plusBtn.textContent = '＋';
+      plusBtn.title = 'ToDo行を追加';
+      plusBtn.addEventListener('click', () => addDayTodo(dateStr, true));
+      activeBtns.appendChild(plusBtn);
+      activeRow.appendChild(activeTitle);
+      activeRow.appendChild(activeBtns);
+      body.appendChild(activeRow);
+
+      activeSorted.forEach(item => {
+        body.appendChild(createDayTodoElement(dateStr, item, 'active', highIds.has(item.id)));
+      });
+
+      const compRow = document.createElement('div');
+      compRow.className = 'todo-section-title-row';
+      const compTitle = document.createElement('div');
+      compTitle.className = 'todo-section-title';
+      compTitle.textContent = '完了';
+      compRow.appendChild(compTitle);
+      body.appendChild(compRow);
+      completed.forEach(item => {
+        const el = createDayTodoElement(dateStr, item, 'completed', item.priority === 'high');
+        el.classList.add('completed');
+        body.appendChild(el);
+      });
+
+      const unRow = document.createElement('div');
+      unRow.className = 'todo-section-title-row';
+      const unTitle = document.createElement('div');
+      unTitle.className = 'todo-section-title';
+      unTitle.textContent = '不要';
+      unRow.appendChild(unTitle);
+      body.appendChild(unRow);
+      unnecessary.forEach(item => {
+        const el = createDayTodoElement(dateStr, item, 'unnecessary', item.priority === 'high');
+        el.classList.add('unnecessary');
+        body.appendChild(el);
+      });
+
+      col.appendChild(body);
+      weekGrid.appendChild(col);
+    }
+
+    // モバイル用：選択中の日だけ表示
+    document.querySelectorAll('.day-column').forEach(col => {
+      if (col.dataset.date === state.currentSelectedDate) {
+        col.classList.add('mobile-current-day');
+      } else {
+        col.classList.remove('mobile-current-day');
+      }
+    });
+    updateMobileDateLabel();
+  }
+
+  function createDayTodoElement(dateStr, item, section, isHigh) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'todo-item';
+    if (item.completed) wrapper.classList.add('completed');
+    if (item.unnecessary) wrapper.classList.add('unnecessary');
+    if (isHigh) wrapper.classList.add('high-priority');
+    if (item._match) wrapper.classList.add('search-hit');
+
+    if (section === 'active') {
+      const checkboxDone = document.createElement('input');
+      checkboxDone.type = 'checkbox';
+      checkboxDone.checked = item.completed;
+      checkboxDone.title = '完了';
+      checkboxDone.addEventListener('change', (e) => {
+        toggleDayTodoCompleted(dateStr, item.id, e.target.checked);
+      });
+      wrapper.appendChild(checkboxDone);
+    }
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = item.text || '';
+    input.placeholder = 'ToDoを入力…（ダブルクリックで詳細）';
+    input.dataset.type = 'day';
+    input.dataset.key = dateStr;
+    input.dataset.id = item.id;
+    input.dataset.section = section;
+    input.addEventListener('input', (e) => {
+      updateDayTodoText(dateStr, item.id, e.target.value);
+    });
+    input.addEventListener('dblclick', () => {
+      openDetail('day', dateStr, item.id);
+    });
+    input.addEventListener('keydown', handleInputEnter);
+    wrapper.appendChild(input);
+
+    if (section === 'active') {
+      const moveBtn = document.createElement('button');
+      moveBtn.className = 'move-btn';
+      moveBtn.textContent = '翌日▶';
+      moveBtn.title = 'このToDoを翌日に移動します';
+      moveBtn.addEventListener('click', () => {
+        moveDayTodoToNext(dateStr, item.id);
+      });
+      wrapper.appendChild(moveBtn);
+    }
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'delete-btn';
+    delBtn.textContent = '－';
+    delBtn.title = 'この行を削除します';
+    delBtn.addEventListener('click', () => {
+      deleteDayTodo(dateStr, item.id);
+    });
+    wrapper.appendChild(delBtn);
+
+    if (pendingFocus &&
+        pendingFocus.type === 'day' &&
+        pendingFocus.key === dateStr &&
+        pendingFocus.id === item.id &&
+        section === 'active') {
+      setTimeout(() => input.focus(), 0);
+      pendingFocus = null;
+    }
+
+    return wrapper;
+  }
+
+  /* ===== 月間描画 ===== */
+  function renderMonthly() {
+    const label = document.getElementById('monthlyLabel');
+    const listContainer = document.getElementById('monthlyList');
+    const [y, m] = state.currentMonthly.split('-').map(Number);
+    label.textContent = formatMonthLabel(y, m);
+
+    const todos = ensureMonthlyTodos(state.currentMonthly);
+    listContainer.innerHTML = '';
+
+    const { activeSorted, highIds } = sortActiveItems(todos);
+    const completed = todos.filter(t => t.completed);
+    const unnecessary = todos.filter(t => t.unnecessary);
+
+    const activeRow = document.createElement('div');
+    activeRow.className = 'todo-section-title-row';
+    const activeTitle = document.createElement('div');
+    activeTitle.className = 'todo-section-title';
+    activeTitle.textContent = '月間ToDo';
+    const activeBtns = document.createElement('div');
+    activeBtns.className = 'todo-section-buttons';
+    const plusBtn = document.createElement('button');
+    plusBtn.textContent = '＋';
+    plusBtn.title = '月間ToDo行を追加';
+    plusBtn.addEventListener('click', () => addMonthlyTodo(state.currentMonthly, true));
+    activeBtns.appendChild(plusBtn);
+    activeRow.appendChild(activeTitle);
+    activeRow.appendChild(activeBtns);
+    listContainer.appendChild(activeRow);
+
+    activeSorted.forEach(item => {
+      listContainer.appendChild(createMonthlyTodoElement(state.currentMonthly, item, 'active', highIds.has(item.id)));
+    });
+
+    const compRow = document.createElement('div');
+    compRow.className = 'todo-section-title-row';
+    const compTitle = document.createElement('div');
+    compTitle.className = 'todo-section-title';
+    compTitle.textContent = '完了';
+    compRow.appendChild(compTitle);
+    listContainer.appendChild(compRow);
+    completed.forEach(item => {
+      const el = createMonthlyTodoElement(state.currentMonthly, item, 'completed', item.priority === 'high');
+      el.classList.add('completed');
+      listContainer.appendChild(el);
+    });
+
+    const unRow = document.createElement('div');
+    unRow.className = 'todo-section-title-row';
+    const unTitle = document.createElement('div');
+    unTitle.className = 'todo-section-title';
+    unTitle.textContent = '不要';
+    unRow.appendChild(unTitle);
+    listContainer.appendChild(unRow);
+    unnecessary.forEach(item => {
+      const el = createMonthlyTodoElement(state.currentMonthly, item, 'unnecessary', item.priority === 'high');
+      el.classList.add('unnecessary');
+      listContainer.appendChild(el);
+    });
+  }
+
+  function createMonthlyTodoElement(monthKey, item, section, isHigh) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'todo-item';
+    if (item.completed) wrapper.classList.add('completed');
+    if (item.unnecessary) wrapper.classList.add('unnecessary');
+    if (isHigh) wrapper.classList.add('high-priority');
+    if (item._match) wrapper.classList.add('search-hit');
+
+    if (section === 'active') {
+      const checkboxDone = document.createElement('input');
+      checkboxDone.type = 'checkbox';
+      checkboxDone.checked = item.completed;
+      checkboxDone.title = '完了';
+      checkboxDone.addEventListener('change', (e) => {
+        toggleMonthlyTodoCompleted(monthKey, item.id, e.target.checked);
+      });
+      wrapper.appendChild(checkboxDone);
+    }
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = item.text || '';
+    input.placeholder = '月間ToDoを入力…（ダブルクリックで詳細）';
+    input.dataset.type = 'month';
+    input.dataset.key = monthKey;
+    input.dataset.id = item.id;
+    input.dataset.section = section;
+    input.addEventListener('input', (e) => {
+      updateMonthlyTodoText(monthKey, item.id, e.target.value);
+    });
+    input.addEventListener('dblclick', () => {
+      openDetail('month', monthKey, item.id);
+    });
+    input.addEventListener('keydown', handleInputEnter);
+    wrapper.appendChild(input);
+
+    if (section === 'active') {
+      const moveBtn = document.createElement('button');
+      moveBtn.className = 'move-btn';
+      moveBtn.textContent = '翌月▶';
+      moveBtn.title = 'この月間ToDoを翌月に移動します';
+      moveBtn.addEventListener('click', () => {
+        moveMonthlyTodoToNext(monthKey, item.id);
+      });
+      wrapper.appendChild(moveBtn);
+    }
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'delete-btn';
+    delBtn.textContent = '－';
+    delBtn.title = 'この行を削除します';
+    delBtn.addEventListener('click', () => {
+      deleteMonthlyTodo(monthKey, item.id);
+    });
+    wrapper.appendChild(delBtn);
+
+    if (pendingFocus &&
+        pendingFocus.type === 'month' &&
+        pendingFocus.key === monthKey &&
+        pendingFocus.id === item.id &&
+        section === 'active') {
+      setTimeout(() => input.focus(), 0);
+      pendingFocus = null;
+    }
+
+    return wrapper;
+  }
+
+  function handleInputEnter(e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const input = e.target;
+    const type = input.dataset.type;
+    const key = input.dataset.key;
+    const section = input.dataset.section;
+    if (section !== 'active') return;
+
+    const container = input.closest(type === 'day' ? '.day-body' : '.monthly-list');
+    if (!container) return;
+
+    const selector = `input[type="text"][data-type="${type}"][data-key="${key}"][data-section="active"]`;
+    const inputs = Array.from(container.querySelectorAll(selector));
+    const idx = inputs.indexOf(input);
+    if (idx >= 0 && idx < inputs.length - 1) {
+      inputs[idx + 1].focus();
+      return;
+    }
+
+    if (type === 'day') {
+      addDayTodo(key, true);
+    } else {
+      addMonthlyTodo(key, true);
+    }
+  }
+
+  /* ===== 週・日付移動 ===== */
+  function changeWeek(delta) {
+    const monday = fromDateString(state.currentWeekStart);
+    const newMonday = addDays(monday, delta * 7);
+    state.currentWeekStart = toDateString(newMonday);
+    state.currentMonthly = getMonthlyKeyFromDate(newMonday);
+
+    const selectedDate = fromDateString(state.currentSelectedDate);
+    const shiftedSelected = addDays(selectedDate, delta * 7);
+    state.currentSelectedDate = toDateString(shiftedSelected);
+
+    state.calendarCenterMonth = state.currentMonthly;
+    saveState();
+    renderWeek();
+    renderCalendars();
+    renderMonthly();
+  }
+
+  function goTodayWeek() {
+    const today = new Date();
+    const monday = getMonday(today);
+    state.currentWeekStart = toDateString(monday);
+    state.currentMonthly = getMonthlyKeyFromDate(today);
+    state.calendarCenterMonth = state.currentMonthly;
+    state.currentSelectedDate = toDateString(today);
+    saveState();
+    renderWeek();
+    renderCalendars();
+    renderMonthly();
+  }
+
+  function changeMonthly(delta) {
+    const [y, m] = state.currentMonthly.split('-').map(Number);
+    const d = new Date(y, m - 1, 1);
+    const newMonth = addMonths(d, delta);
+    const newKey = getMonthlyKeyFromDate(newMonth);
+    state.currentMonthly = newKey;
+    state.calendarCenterMonth = newKey;
+    saveState();
+    renderMonthly();
+    renderCalendars();
+  }
+
+  function goCurrentMonth() {
+    const today = new Date();
+    const key = getMonthlyKeyFromDate(today);
+    state.currentMonthly = key;
+    state.calendarCenterMonth = key;
+    saveState();
+    renderMonthly();
+    renderCalendars();
+  }
+
+  /* ===== モバイル日別ナビ ===== */
+  function updateMobileDateLabel() {
+    const el = document.getElementById('mobileDateLabel');
+    if (!el || !state.currentSelectedDate) return;
+    const d = fromDateString(state.currentSelectedDate);
+    el.textContent = d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate() + '（' + getJpWeekday(d) + '）';
+  }
+
+  function changeMobileDay(delta) {
+    const cur = fromDateString(state.currentSelectedDate);
+    const next = addDays(cur, delta);
+    const nextStr = toDateString(next);
+    state.currentSelectedDate = nextStr;
+
+    const monday = fromDateString(state.currentWeekStart);
+    const sunday = addDays(monday, 6);
+    if (next < monday || next > sunday) {
+      const newMonday = getMonday(next);
+      state.currentWeekStart = toDateString(newMonday);
+      state.currentMonthly = getMonthlyKeyFromDate(next);
+      state.calendarCenterMonth = state.currentMonthly;
+    }
+    saveState();
+    renderWeek();
+    renderCalendars();
+    renderMonthly();
+  }
+
+  function goTodayMobile() {
+    const today = new Date();
+    const todayStr = toDateString(today);
+    const monday = getMonday(today);
+    state.currentSelectedDate = todayStr;
+    state.currentWeekStart = toDateString(monday);
+    state.currentMonthly = getMonthlyKeyFromDate(today);
+    state.calendarCenterMonth = state.currentMonthly;
+    saveState();
+    renderWeek();
+    renderCalendars();
+    renderMonthly();
+  }
+
+  /* ===== 詳細モーダル ===== */
+  function getDetailItem() {
+    if (!currentDetail) return null;
+    if (currentDetail.type === 'day') {
+      const list = ensureDayTodos(currentDetail.key);
+      return list.find(t => t.id === currentDetail.id) || null;
+    } else {
+      const list = ensureMonthlyTodos(currentDetail.key);
+      return list.find(t => t.id === currentDetail.id) || null;
+    }
+  }
+
+  function openDetail(type, key, id) {
+    currentDetail = { type, key, id };
+    const item = getDetailItem();
+    if (!item) return;
+
+    const title = document.getElementById('detailTitle');
+    title.textContent = (type === 'day' ? '日別ToDo詳細（' + key + '）' : '月間ToDo詳細（' + key + '）');
+
+    document.getElementById('detailTodo').value = item.text || '';
+
+    let status = 'normal';
+    if (item.unnecessary) status = 'unnecessary';
+    else if (item.completed) status = 'done';
+    const radios = document.querySelectorAll('input[name="detailStatus"]');
+    radios.forEach(r => r.checked = (r.value === status));
+
+    const hourSel = document.getElementById('detailHour');
+    const minuteSel = document.getElementById('detailMinute');
+    hourSel.value = (item.timeHour === null || item.timeHour === undefined) ? '' : String(item.timeHour);
+    minuteSel.value = (item.timeMinute === null || item.timeMinute === undefined) ? '' : String(item.timeMinute);
+
+    document.getElementById('detailPlace').value = item.place || '';
+    document.getElementById('detailDetail').value = item.detail || '';
+    document.getElementById('detailNote').value = item.note || '';
+    document.getElementById('detailPriorityHigh').checked = (item.priority === 'high');
+    document.getElementById('detailLink').value = item.link || '';
+
+    document.getElementById('detailOverlay').classList.remove('hidden');
+  }
+
+  function closeDetail(save) {
+    if (save && currentDetail) {
+      const item = getDetailItem();
+      if (item) {
+        item.text = document.getElementById('detailTodo').value || '';
+        const hourVal = document.getElementById('detailHour').value;
+        item.timeHour = hourVal === '' ? null : parseInt(hourVal, 10);
+        const minVal = document.getElementById('detailMinute').value;
+        item.timeMinute = minVal === '' ? null : parseInt(minVal, 10);
+        item.place = document.getElementById('detailPlace').value || '';
+        item.detail = document.getElementById('detailDetail').value || '';
+        item.note = document.getElementById('detailNote').value || '';
+        item.link = document.getElementById('detailLink').value || '';
+        item.priority = document.getElementById('detailPriorityHigh').checked ? 'high' : '';
+
+        let status = 'normal';
+        const radios = document.querySelectorAll('input[name="detailStatus"]');
+        radios.forEach(r => { if (r.checked) status = r.value; });
+        if (status === 'done') {
+          item.completed = true;
+          item.unnecessary = false;
+        } else if (status === 'unnecessary') {
+          item.unnecessary = true;
+          item.completed = false;
+        } else {
+          item.completed = false;
+          item.unnecessary = false;
+        }
+
+        saveState();
+        renderWeek();
+        renderMonthly();
+      }
+    }
+    document.getElementById('detailOverlay').classList.add('hidden');
+    currentDetail = null;
+  }
+
+  /* ===== 検索 ===== */
+  function closeSearchResults() {
+    const overlay = document.getElementById('searchResultsOverlay');
+    const body = document.getElementById('searchResultsBody');
+    overlay.classList.add('hidden');
+    body.innerHTML = '';
+  }
+
+  function matchesQuery(item, q) {
+    const text = [
+      item.text || '',
+      item.place || '',
+      item.detail || '',
+      item.note || ''
+    ].join('\n').toLowerCase();
+    return text && text.includes(q);
+  }
+
+  function searchTodos() {
+    const input = document.getElementById('searchInput');
+    const q = input.value.trim().toLowerCase();
+    if (!q) {
+      closeSearchResults();
+      return;
+    }
+
+    const dailyActive = {};
+    const dailyDone = {};
+    const monthlyActive = {};
+    const monthlyDone = {};
+
+    for (const dateStr in state.todosByDate) {
+      const list = normalizeDayList(state.todosByDate[dateStr]);
+      list.forEach(item => {
+        if (!matchesQuery(item, q)) return;
+        if (item.completed || item.unnecessary) {
+          (dailyDone[dateStr] ??= []).push(item);
+        } else {
+          (dailyActive[dateStr] ??= []).push(item);
+        }
+      });
+    }
+
+    for (const monthKey in state.monthlyTodos) {
+      const list = normalizeMonthlyList(state.monthlyTodos[monthKey]);
+      list.forEach(item => {
+        if (!matchesQuery(item, q)) return;
+        if (item.completed || item.unnecessary) {
+          (monthlyDone[monthKey] ??= []).push(item);
+        } else {
+          (monthlyActive[monthKey] ??= []).push(item);
+        }
+      });
+    }
+
+    const hasResult =
+      Object.keys(dailyActive).length ||
+      Object.keys(dailyDone).length ||
+      Object.keys(monthlyActive).length ||
+      Object.keys(monthlyDone).length;
+
+    const overlay = document.getElementById('searchResultsOverlay');
+    const body = document.getElementById('searchResultsBody');
+    const title = document.getElementById('searchResultsTitle');
+
+    body.innerHTML = '';
+    title.textContent = '検索結果：' + input.value;
+
+    if (!hasResult) {
+      const msg = document.createElement('div');
+      msg.className = 'search-no-result';
+      msg.textContent = '該当するToDoはありませんでした。';
+      body.appendChild(msg);
+      overlay.classList.remove('hidden');
+      return;
+    }
+
+    const h3 = document.createElement('h3');
+    h3.textContent = '対象の一覧';
+    body.appendChild(h3);
+
+    function renderSection(titleText, groups, type, isDoneSection) {
+      const keys = Object.keys(groups);
+      if (!keys.length) return;
+      keys.sort();
+
+      const sectionTitle = document.createElement('div');
+      sectionTitle.className = 'search-section-title';
+      sectionTitle.textContent = titleText;
+      body.appendChild(sectionTitle);
+
+      keys.forEach(key => {
+        let headingText;
+        if (type === 'day') {
+          const d = fromDateString(key);
+          headingText = key + '（' + getJpWeekday(d) + '）';
+        } else {
+          const [yy, mm] = key.split('-').map(Number);
+          headingText = yy + '年' + mm + '月';
+        }
+        const heading = document.createElement('div');
+        heading.className = 'search-date-heading';
+        heading.textContent = headingText;
+        body.appendChild(heading);
+
+        groups[key].forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'search-result-item';
+          row.addEventListener('click', () => {
+            jumpToItem(type, key, item.id);
+          });
+
+          const meta = document.createElement('div');
+          meta.className = 'search-result-meta';
+
+          const badge = document.createElement('span');
+          badge.className = 'search-badge';
+          if (!isDoneSection) {
+            badge.classList.add('active');
+            badge.textContent = 'ToDo';
+          } else if (item.unnecessary) {
+            badge.classList.add('unnecessary');
+            badge.textContent = '不要';
+          } else {
+            badge.classList.add('done');
+            badge.textContent = '完了';
+          }
+          meta.appendChild(badge);
+
+          if (item.timeHour !== null && item.timeMinute !== null) {
+            const timeSpan = document.createElement('span');
+            timeSpan.textContent = '時間: ' +
+              item.timeHour.toString().padStart(2, '0') + ':' +
+              item.timeMinute.toString().padStart(2, '0') + '  ';
+            meta.appendChild(timeSpan);
+          }
+          if (item.place) {
+            const placeSpan = document.createElement('span');
+            placeSpan.textContent = '場所: ' + item.place + '  ';
+            meta.appendChild(placeSpan);
+          }
+          row.appendChild(meta);
+
+          const text = document.createElement('div');
+          text.className = 'search-result-text';
+          text.textContent = item.text || '(無題)';
+          row.appendChild(text);
+
+          body.appendChild(row);
+        });
+      });
+    }
+
+    renderSection('日別 ToDo（これから）', dailyActive, 'day', false);
+    renderSection('日別 完了・不要', dailyDone, 'day', true);
+    renderSection('月間 ToDo（これから）', monthlyActive, 'month', false);
+    renderSection('月間 完了・不要', monthlyDone, 'month', true);
+
+    overlay.classList.remove('hidden');
+  }
+
+  function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    closeSearchResults();
+  }
+
+  function jumpToItem(type, key, id) {
+    if (type === 'day') {
+      const d = fromDateString(key);
+      state.currentWeekStart = toDateString(getMonday(d));
+      state.currentMonthly = getMonthlyKeyFromDate(d);
+      state.calendarCenterMonth = state.currentMonthly;
+      state.currentSelectedDate = key;
+      saveState();
+      renderAll();
+      setTimeout(() => {
+        const input = document.querySelector(
+          `input[data-type="day"][data-key="${key}"][data-id="${id}"]`
+        );
+        if (input) {
+          input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+          input.focus();
+        }
+      }, 50);
+    } else {
+      state.currentMonthly = key;
+      state.calendarCenterMonth = key;
+      saveState();
+      renderAll();
+      setTimeout(() => {
+        const input = document.querySelector(
+          `input[data-type="month"][data-key="${key}"][data-id="${id}"]`
+        );
+        if (input) {
+          input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+          input.focus();
+        }
+      }, 50);
+    }
+    closeSearchResults();
+  }
+
+  function renderAll() {
+    renderCalendars();
+    renderWeek();
+    renderMonthly();
+  }
+
+  function initTimeSelects() {
+    const hourSel = document.getElementById('detailHour');
+    const minuteSel = document.getElementById('detailMinute');
+    for (let h = 0; h < 24; h++) {
+      const opt = document.createElement('option');
+      opt.value = String(h);
+      opt.textContent = h;
+      hourSel.appendChild(opt);
+    }
+    for (let m = 0; m < 60; m += 10) {
+      const opt = document.createElement('option');
+      opt.value = String(m);
+      opt.textContent = m;
+      minuteSel.appendChild(opt);
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    initTimeSelects();
+    loadState();
+    renderAll();
+  });
+</script>
+</body>
+</html>
